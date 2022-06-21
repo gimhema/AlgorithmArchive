@@ -2,7 +2,25 @@
 #include <string>
 using namespace std;
 
-int str_cursor = 0; // 0일땐 왼쪽부터 1일땐 오른쪽부터
+int str_cursor_mod = 0; // 0일땐 왼쪽부터 1일땐 오른쪽부터
+int left_cursor; // 왼쪽 커서 0부터 시작
+int right_cursor; // 오른쪽 커서 문자열의 끝 위치(길이 - 1)부터 시작
+
+string narrow_str(string s)
+{    
+    // 커서를 좁혀가면서 문자열을 반환함
+    // 현재 커서 모드를 보고
+        // 왼쪽 모드라면 왼쪽커서를 +1하고 문자열을 반환
+            //(기저조건) 문자열 길이가 2라면 종료문자 "AAA"를 리턴하고 종료
+            // 2인 경우 팰린드롬을 만들수가 없기때문
+        // 이후 모드를 오른쪽으로 돌림
+        // 오른쪽 모드라면 오른쪽 커서를 -1하고 문자열을 반환
+            //(기저조건) 문자열 길이가 2라면 종료문자 "AAA"를 리턴하고 종료
+            // 2인 경우 팰린드롬을 만들수가 없기때문
+    // 이후 모드를 왼쪽으로 돌림
+    string result;
+    return result;
+}
 
 int isPalindrome(string s)
 {
@@ -15,11 +33,13 @@ int isPalindrome(string s)
 bool isSameStartEnd(string s)
 {
     // 주어진 문자열의 시작과 끝이 같은지를 리턴한다.
-    return false
+    return false;
 }
 
 int solution(string s)
 {
+    // str.substr(left, right) 활용
+    
     // 먼저 주어진 s자체가 팰린드롬인지 검사함.
     // s자체가 팰린드롬이면 그 자체로 이미 정답(기저조건)
     // 바로 s의 길이를 answer로 리턴
