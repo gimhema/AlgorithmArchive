@@ -10,6 +10,15 @@ using namespace std;
 int node_count_min = 9999;
 int node_count = 0;
 
+void count_update()
+{
+    if(node_count < node_count_min)
+    {
+        node_count_min = node_count;
+        node_count = 0;
+    }
+}
+
 // void initialzie_graph(unordered_map<int, vector<int>> &graph, int _size)
 // {
 //     // _size만큼 그래프를 초기화한다.
@@ -21,7 +30,18 @@ void create_graph(unordered_map<int, vector<int>> &graph, vector<vector<int>> &r
     // um.insert({"melon",3});
     for(int i = 0; i < results.size(); i++)
     {
-        graph.insert({results[i][0], graph[results[i][0]].push_back(results[i][1])})
+        // graph[results[i][0]].push_back(results[i][1]
+        if(graph.count(results[i][0])>0)
+        {
+        graph[results[i][0]].push_back(results[i][1]);    
+        }
+        else
+        {
+        // 초기화
+        graph.insert({results[i][0], {9999}});
+        graph[results[i][0]].clear();
+        graph[results[i][0]].push_back(results[i][1]);
+        }
     }
 }
 
@@ -29,14 +49,14 @@ void rank_search(unordered_map<int, vector<int>> &graph, int current_pos)
 {
     // if graph에 current_pos를 key로하는 map이 존재하는지
     // lang_map.contains(key_to_find)
-    if(graph.contains(current_pos))
+    if(graph.count(current_pos)>0)
     {
         // 존재한다면 node_count ++하고
-        node_count = node_count + 1;
+        
         // for graph[key].size() 만큼
         for(int i = 0; i < graph[current_pos].size(); i++)
         {
-            // rank_search(graph, graph[current_pos][i]) 재귀호출
+            node_count = node_count + 1;
             rank_search(graph, graph[current_pos][i]);
         }
 
@@ -52,17 +72,15 @@ void rank_search(unordered_map<int, vector<int>> &graph, int current_pos)
     return;
 }
 
-void count_update()
-{
-    if(node_count < node_count_min)
-    {
-        node_count = node_count_min;
-        node_count = 0;
-    }
-}
+
 
 
 int solution(int n, vector<vector<int>> results) {
-    int answer = 0;
+    
+    unordered_map<int, vector<int>> graph;
+    create_graph(graph, results);
+    int start = results[0][0];
+    rank_search(graph, start);
+    int answer = node_count_min;
     return answer;
 }
