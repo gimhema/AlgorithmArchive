@@ -5,28 +5,56 @@ using namespace std;
 
 // 1000000007
 // dfs + 완전탐색
-
-void dfs()
+// 최단경로의 개수를 구하라고했지만 사실 오른쪽, 아래만 움직이면 그게 최단경로다
+// dfs문제..?
+struct Position
 {
-    // 기저조건 
-    // 1. 집에 도착한 경우 
-    // 2. 범위 밖인 경우 
+    int x;
+    int y;
+};
+
+Position current_position;
+Position goal;
+vector<vector<int>> _puddles;
+
+bool is_arrive()
+{
+    if(current_position.x == goal.x && current_position.y == goal.y) { return true; }
+    else { return false; }
 }
 
-vector<int> move_right(int current_x, int current _y)
+
+void bfs()
 {
-    return { current_x + 1, current_y };
+    // 기저조건
+    // 1. 학교에 도착한 경우
+    if(is_arrive())
+    { 
+        
+        return;
+    }
+    // 2. 범위 밖인 경우
+    // 3. 물에 잠긴 경우
+    
 }
 
-vector<int> move_up(int current_x, int current _y)
+void move_right(int m)
 {
-    return { current_x , current_y + 1 };
+    int temp = current_position.x + 1;
+    current_position.x = temp;
+}
+
+void move_up(int n)
+{
+    int temp = current_position.y + 1;
+    current_position.y = temp;
 }
 
 int solution(int m, int n, vector<vector<int>> puddles) {
     int answer = 0;
-
-
+    _puddles = puddles;
+    goal.x = m;
+    goal.y = n;
     // answer = min_dist % 1000000007
     return answer;
 }
