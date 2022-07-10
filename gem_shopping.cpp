@@ -3,17 +3,40 @@
 
 using namespace std;
 
-// 먼저 보석의 종류를 Search하는 함수를 구현해야하고
-// 종류를 파악했으면 최단거리를 알 수 있다.
-// 각각의 케이스를 비교하면서 최단거리와 비교하고
-// 최단거리를 만족하는 케이스가 존재하면 바로 리턴
-// 없다면 모든 조건을 만족하는 케이스중 가장 짧은 케이스를 리턴
-// 시작 진열대번호가 가장 작은 구간을 리턴하면 되기때문에 . . .
-// min_gems_line 개수만큼, 배열들의 연속된 부분들을 wallet에 쓸어담으면서
-// 조건을 만족하는지 확인한 후, 만약 조건을 만족한다면 wallet의 길이를 answer로 리턴하고
-// 아니라면 배열 인덱스 포인터를 ++하여 위의 과정을 반복한다.
-// 만약 배열들을 쓸어담으면서 끝부분에 도달한다면 min_gems_line을 ++하고
-// 다시 배열의 첫번째 원소로 돌아가 위의 과정을 반복한다.
+"DIA" (cursor_r = 0)
+1
+"DIA"  "RUBY" (cursor_r = 1)
+2
+"DIA"  "RUBY"   "RUBY" (cursor_r = 1)
+2
+"DIA"  "RUBY"   "RUBY"  "DIA" (cursor_r = 1)
+2
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA" (cursor_r = 1)
+2
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA"  "EMERALD" (cursor_r = 5)
+3
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA"  "EMERALD"  "SAPPHIRE" (cursor_r = 6)
+4
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA"  "EMERALD"  "SAPPHIRE"  "DIA" (cursor_r = 6) >> 여기까지 왔다가.
+4
+gem_count_temp = gem_count_max;
+다시 6번 커서에서 좌측으로 가면서
+만약 가지고있지 않은 보석이라면(기존 보석버퍼를 새로지우거나 거꾸로갈때 전용 버퍼를 별도로 만든다)
+gem_count_temp를 감소시킨다.
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA"  "EMERALD"  "SAPPHIRE"
+gem_count_temp = 3 (4 - 1)
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA"  "EMERALD"
+gem_count_temp = 2 (3 - 1)
+"DIA"  "RUBY"   "RUBY"  "DIA"   "DIA"
+gem_count_temp = 1(2 - 1)
+"DIA"  "RUBY"   "RUBY"  "DIA" 
+gem_count_temp = 1(가지고 있는 보석임, 현상유지)
+"DIA"  "RUBY"   "RUBY"
+gem_count_temp = 0(1 - 1)
+gem_count_temp가 0이되는 지점을 가져온다 이 지점을 cursor_l로 놓는다.
+answer = {cursor_l, cursor_r}
+
+
 
 vector<string> gems_type;
 vector<string> gems_wallet;
