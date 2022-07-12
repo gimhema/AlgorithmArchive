@@ -1,86 +1,72 @@
 #include <string>
 #include <vector>
-#include <queue>
 #include <unordered_map>
 using namespace std;
 
-// 승자를 기준으로 방향 그래프를 그린다.
-// 거쳐가는 노드 개수의 최소값 = 정확하게 순위를 매길 수 있는 선수의 수
+/*
+[[4, 3], [4, 2], [3, 2], [1, 2], [2, 5]]
+2 - 4, 3, 1
+5 - 2
+*/
 
-int node_count_min = 9999;
-int node_count = 0;
+/*
+끝점을 찾는다.
+아무 점 하나를 잡고 끝점까지 이동시킨다.
 
-void count_update()
+탐험을 완료하고 Destination을 찾을때마다, Destination을 맵에서 지우고
+그래프가 완전한지 체크한다.
+
+그래프가 완전하다는 것은, 모든 선수, 즉 노드가 관계를 하나씩은 가지고 있다는 의미앋.
+
+*/
+
+unordered_map<int, vector<int>> player_map;
+int answer_count = 0;
+int destination = 9999;
+
+void init_player_map(vector<int> &results)
 {
-    if(node_count < node_count_min)
-    {
-        node_count_min = node_count;
-        node_count = 0;
-    }
-}
-
-// void initialzie_graph(unordered_map<int, vector<int>> &graph, int _size)
-// {
-//     // _size만큼 그래프를 초기화한다.
-// }
-
-void create_graph(unordered_map<int, vector<int>> &graph, vector<vector<int>> &results)
-{
-    // results를 바탕으로 그래프를 구성한다.
-    // um.insert({"melon",3});
     for(int i = 0; i < results.size(); i++)
     {
-        // graph[results[i][0]].push_back(results[i][1]
-        if(graph.count(results[i][0])>0)
-        {
-        graph[results[i][0]].push_back(results[i][1]);    
+        if(player_map.find(results[i][0])!=player_map.end()){
+            // 찾았다면
+            player_map[results[i][0]].push_back(results[i][1]);
         }
         else
         {
-        // 초기화
-        graph.insert({results[i][0], {9999}});
-        graph[results[i][0]].clear();
-        graph[results[i][0]].push_back(results[i][1]);
+            // 찾지못했다면
+            player_map[results[i][0]] = { results[i][1] };
         }
     }
 }
 
-void rank_search(unordered_map<int, vector<int>> &graph, int current_pos)
+bool is_map_complete()
 {
-    // if graph에 current_pos를 key로하는 map이 존재하는지
-    // lang_map.contains(key_to_find)
-    if(graph.count(current_pos)>0)
-    {
-        // 존재한다면 node_count ++하고
-        
-        // for graph[key].size() 만큼
-        for(int i = 0; i < graph[current_pos].size(); i++)
-        {
-            node_count = node_count + 1;
-            rank_search(graph, graph[current_pos][i]);
-        }
-
-    }
-    // else 존재하지않는다면, 즉 끝점이라면
-    else
-    {
-        // node_count와 node_count_min을 비교
-        // 만약 node_count가 node_count_min보다 작다면 업데이트        
-        count_update();
-    }
-    // 종료
-    return;
+    
 }
 
-
+void exploration(int player_idx)
+{
+    // 끝점은 반드시 키가 존재하지 않을 것이다.
+        if(player_map.find(player_idx)!=player_map.end()){
+            // 찾았다면
+            vector<int> exp_vec = player_map[results[i][0]];
+            for(int i = 0; i < exp_vec.size(); i++)
+            {
+                exploration(exp_vec[i]);
+            }
+        }
+        else
+        {
+            destination = player_idx;
+            answer_count++;
+        }
+}
 
 
 int solution(int n, vector<vector<int>> results) {
-    
-    unordered_map<int, vector<int>> graph;
-    create_graph(graph, results);
-    int start = results[0][0];
-    rank_search(graph, start);
-    int answer = node_count_min;
+    int answer = 0;
     return answer;
 }
+
+
