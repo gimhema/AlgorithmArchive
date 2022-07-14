@@ -6,10 +6,10 @@
 
 using namespace std;
 
-struct node
+struct levels
 {
   int index;
-  vector<int> neighbors;
+  int level;
 };
 
 unordered_map<int, vector<int>> graph;
@@ -21,6 +21,7 @@ int _count = 0;
 
 void calc_answer()
 {
+    sort(levels.rbegin(), levels.rend());
     int max = levels[0];
     for(int i = 0; i < levels.size(); i++)
     {
@@ -37,6 +38,9 @@ void calc_answer()
 
 void init_graph(int n, vector<vector<int>> &edge)
 {
+    levels.push_back(-1); // 0번 인덱스는 계산하지않는다.
+    visited.push_back(false);
+
     for(int i = 0; i < n; i++)
     {
         visited.push_back(false);
@@ -47,6 +51,14 @@ void init_graph(int n, vector<vector<int>> &edge)
     for(int j = 0; j < edge.size(); j++)
     {
         graph[edge[j][0]].push_back(edge[j][1]);
+        graph[edge[j][1]].push_back(edge[j][0]);
+        // if(edge[j][0] < edge[j][1])
+        // {
+        //  graph[edge[j][0]].push_back(edge[j][1]);   
+        // }else
+        // {
+        //  graph[edge[j][1]].push_back(edge[j][0]);   
+        // }
     }
 }
 
@@ -55,7 +67,7 @@ void bfs(int start)
     visited[start] = true;
     queue<int> q;
     q.push(start);
-    
+
     while(q.size())
     {
         int current = q.front();
@@ -64,8 +76,7 @@ void bfs(int start)
         {
             if(visited[graph[current][i]] == false )
             {
-                levels[graph[current][i] + 1] = levels[current + 1] + 1;
-                sort(levels.rbegin(), levels.rend());	
+                levels[graph[current][i]] = levels[current] + 1;
                 q.push(graph[current][i]);
                 visited[graph[current][i]] = true;
             }
@@ -75,10 +86,12 @@ void bfs(int start)
 }
 
 
-
 int solution(int n, vector<vector<int>> edge) {
     init_graph(n, edge);
     bfs(1);
     int answer = _count;
     return answer;
 }
+
+
+
