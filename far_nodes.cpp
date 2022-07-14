@@ -16,8 +16,24 @@ unordered_map<int, vector<int>> graph;
 vector<bool> visited;
 vector<int> levels; // 검색할 때 i + 1로 찾아야함
 int current_level = 0;
-int count = 0;
+int _count = 0;
 // 1번 노드로부터 BFS 사용
+
+void calc_answer()
+{
+    int max = levels[0];
+    for(int i = 0; i < levels.size(); i++)
+    {
+        if(levels[i] == max)
+        {
+            _count++;
+        }
+        else
+        {
+            return;
+        }
+    }
+}
 
 void init_graph(int n, vector<vector<int>> &edge)
 {
@@ -25,11 +41,12 @@ void init_graph(int n, vector<vector<int>> &edge)
     {
         visited.push_back(false);
         levels.push_back(0);
-        graph.insert({i + 1, {  }});
+        vector<int> v;
+        graph.insert({i + 1, v});
     }
     for(int j = 0; j < edge.size(); j++)
     {
-        graph[edge[i][0]].push_back(edge[i][1]);
+        graph[edge[j][0]].push_back(edge[j][1]);
     }
 }
 
@@ -57,24 +74,11 @@ void bfs(int start)
     calc_answer();
 }
 
-void calc_answer()
-{
-    int max = levels[0];
-    for(int i = 0; i < levels.size(); i++)
-    {
-        if(levels[i] == max)
-        {
-            count++;
-        }else
-        {
-            return;
-        }
-    }
-}
+
 
 int solution(int n, vector<vector<int>> edge) {
+    init_graph(n, edge);
     bfs(1);
-    int answer = count;;
+    int answer = _count;
     return answer;
 }
-
