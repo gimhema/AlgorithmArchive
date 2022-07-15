@@ -15,7 +15,7 @@ using namespace std;
 // 대기시간이 현재 시간보다 큰 경우 = (현재 시간 + 대기 시간) + 수행 시간
 
 int current_time = 0;
-
+int process_coint = 0;
 int selected_job_idx = -5; // 가장 짧은 작업시간을 가진 작업의 인덱스를 여기에 기록한다.
 int min_job_time = 0; // 가장 짧은 작업시간을 여기에 기록한다.
 
@@ -37,6 +37,7 @@ int calc_jobs_avg()
 
 int solution(vector<vector<int>> jobs) {
     jobs_ref = jobs;
+    int wait_v = 0;
     int answer = 0;
     while(total_job_time.size() != jobs.size())
     {
@@ -44,12 +45,12 @@ int solution(vector<vector<int>> jobs) {
         min_job_time = 9999;
         for(int i = 0; i < jobs.size(); i++)
         {
-            if(jobs_ref[i][0] >= 0)
+            if(jobs_ref[i][0] != -1)
             {
                 if(jobs[i][0] <= current_time)
                 {
                     int t = (current_time - jobs[i][0]) + jobs[i][1];
-                    if(t < min_job_time)
+                    if(t <= min_job_time)
                     {
                         selected_job_idx = i;
                         min_job_time = t;
@@ -58,10 +59,11 @@ int solution(vector<vector<int>> jobs) {
                 else
                 {
                     int t = (current_time + jobs[i][0]) + jobs[i][1];
-                    if(t < min_job_time)
+                    if(t <= min_job_time)
                     {
                         selected_job_idx = i;
                         min_job_time = t;
+                        
                     }
                 }
                 // min_job_time = 100000000;
@@ -70,9 +72,12 @@ int solution(vector<vector<int>> jobs) {
         jobs_ref[selected_job_idx][0] = -1;
         current_time = current_time + jobs[selected_job_idx][1];
         total_job_time.push_back(min_job_time); // 가장 앞 원소, 즉 최소값을 저장함
+        process_coint++;
     }
 
     answer = calc_jobs_avg();
     return answer;
 }
+
+
 
