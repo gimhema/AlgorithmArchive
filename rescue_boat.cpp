@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -8,13 +9,14 @@ using namespace std;
 int solution(vector<int> people, int limit) {
     int answer = 0;
     int need_boat = 0;
+    sort(people.begin(), people.end());
     vector<bool> is_rescue(people.size(), false); 
-    vector<bool> rescue_vec;    
+    vector<bool> rescue_vec;
+    int rescue_num = 0;
     
     while(true)
     {
-        if(rescue_vec.size() == people.size()) { break; }
-        // bool redundancy_check = false;
+        if(rescue_num == people.size()) { break; }
         int boat_weight = limit;
         for(int i = 0; i < people.size(); i++)
         {
@@ -22,19 +24,13 @@ int solution(vector<int> people, int limit) {
             {
                 boat_weight = boat_weight - people[i];
                 is_rescue[i] = true;
-                rescue_vec.push_back(true);
-            }
-            if(boat_weight == 0)
-            {
-                need_boat = need_boat + 1;
-                // redundancy_check = true;
-                break;
+                // rescue_vec.push_back(true);
+                rescue_num++;
             }
         }
-        if(redundancy_check == false) { need_boat = need_boat + 1; }
-        // redundancy_check == false
+        need_boat = need_boat + 1;
     }
-    answer = need_boat;
     
+    answer = need_boat;
     return answer;
 }
