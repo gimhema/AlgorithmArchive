@@ -1,0 +1,13 @@
+CXX = g++
+CXXFLAGS = -Wall -std=c++17
+TARGET = binary_tree
+SRCS = main.cpp
+OBJS = $(SRCS:.cpp=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(SRCS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRCS)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
