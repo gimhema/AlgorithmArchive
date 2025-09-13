@@ -210,7 +210,7 @@ main = do
 
     -- u (빨강: 불포함)
     plot (liftEC $ do
-      plot_lines_values .= [arrowFromOrigin u]
+      plot_lines_values .= [arrowFromOrigin u]  
       plot_lines_style  . line_color .= opaque red
       plot_lines_style  . line_width .= 2.0
       plot_lines_title  .= "u (out)"
