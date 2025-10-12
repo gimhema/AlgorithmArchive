@@ -1,174 +1,178 @@
-{-# LANGUAGE TupleSections #-}
+-- file: Main.hs
+-- build: ghc -O2 Main.hs && ./Main
+-- 기본 행렬 연산으로 구현한 LU 분해 (부분 피벗팅, 방정식 풀이 없음)
+
 module Main where
 
 import Data.List (transpose, maximumBy)
 import Data.Ord  (comparing)
-import Control.Monad (foldM)
+import Numeric   (showFFloat)
 
--- 간단한 행렬/벡터 타입
 type Matrix = [[Double]]
-type Vector = [Double]
 
-------------------------
--- 유틸리티
-------------------------
-eye :: Int -> Matrix
-eye n = [ [ if i==j then 1 else 0 | j <- [0..n-1] ] | i <- [0..n-1] ]
+--------------------------------------------------------------------------------
+-- 기본 행렬 연산
+--------------------------------------------------------------------------------
+nRows :: Matrix -> Int
+nRows = length
 
-dims :: Matrix -> (Int, Int)
-dims m = (length m, if null m then 0 else length (head m))
+nCols :: Matrix -> Int
+nCols []     = 0
+nCols (r:_)  = length r
+
+isRectangular :: Matrix -> Bool
+isRectangular []     = True
+isRectangular (r:rs) = all ((== length r) . length) rs
+
+identity :: Int -> Matrix
+identity n = [ [ if i==j then 1 else 0 | j <- [0..n-1] ] | i <- [0..n-1] ]
+
+transposeM :: Matrix -> Matrix
+transposeM = transpose
 
 matMul :: Matrix -> Matrix -> Matrix
-matMul a b =
-  let (_, p) = dims a
-      (p', q) = dims b
-  in if p /= p' then error "matMul: incompatible shapes"
-     else [ [ sum $ zipWith (*) ar bc | bc <- transpose b ] | ar <- a ]
+matMul a b
+  | nCols a /= nRows b = error "matMul: dimension mismatch"
+  | otherwise =
+      let bt = transposeM b
+      in [ [ sum (zipWith (*) row col) | col <- bt ] | row <- a ]
 
-matVec :: Matrix -> Vector -> Vector
-matVec a v = [ sum $ zipWith (*) r v | r <- a ]
+replaceAt :: Int -> a -> [a] -> [a]
+replaceAt i v xs = [ if k==i then v else xs !! k | k <- [0..length xs - 1] ]
 
-augment :: Matrix -> Vector -> Matrix
-augment a b =
-  let (n, m) = dims a
-  in if length b /= n then error "augment: incompatible shapes"
-     else zipWith (\row x -> row ++ [x]) a b
-
-splitAugment :: Matrix -> (Matrix, Vector)
-splitAugment ab =
-  let (n, m') = dims ab
-      m = m' - 1
-      a = map (take m) ab
-      b = map last ab
-  in (a,b)
-
+-- 보기 좋은 출력
 pretty :: Matrix -> String
-pretty = unlines . map (unwords . map (pad . show))
-  where pad s = let k = 12 - length s in replicate (max 1 k) ' ' ++ s
+pretty = unlines . map (unwords . map fmt)
+  where
+    fmt x =
+      let r = round x :: Integer
+      in if abs (x - fromIntegral r) < 1e-12
+           then show r
+           else trim (showFFloat (Just 6) x "")
+    trim s =
+      case break (=='.') s of
+        (i,"")     -> i
+        (i,'.':fs) ->
+          let fs' = reverse (dropWhile (=='0') (reverse fs))
+          in if null fs' then i else i ++ "." ++ fs'
 
-------------------------
--- 기본행렬(초등행렬)
-------------------------
--- 1) 행 교환: swap i j
-eSwap :: Int -> Int -> Int -> Matrix
-eSwap n i j
-  | i == j    = eye n
-  | otherwise = [ row r | r <- [0..n-1] ]
-  where row r
-          | r == i    = unit j
-          | r == j    = unit i
-          | otherwise = unit r
-        unit k = [ if c==k then 1 else 0 | c <- [0..n-1] ]
+--------------------------------------------------------------------------------
+-- 순열행렬, 소거행렬, L 갱신
+--------------------------------------------------------------------------------
+-- k <-> r 행을 바꾸는 순열행렬 P(k,r)
+permSwap :: Int -> Int -> Int -> Matrix
+permSwap n k r
+  | k==r      = identity n
+  | otherwise = [ [ if j==idx i then 1 else 0 | j <- [0..n-1] ] | i <- [0..n-1] ]
+  where
+    idx i | i==k = r
+          | i==r = k
+          | otherwise = i
 
--- 2) 행 스케일: row i <- s * row i
-eScale :: Int -> Int -> Double -> Matrix
-eScale n i s =
-  [ [ if r==i && c==i then s
-      else if r==c then 1
-      else 0
-    | c <- [0..n-1] ]
-  | r <- [0..n-1] ]
+-- k단계 소거행렬 E_k: U' = E_k * U (대각 1, i>k에 대해 E[i,k] = -m_i)
+elimMatrix :: Int -> Int -> [Double] -> Matrix
+elimMatrix n k multipliers =
+  [ [ entry i j | j <- [0..n-1] ] | i <- [0..n-1] ]
+  where
+    entry i j
+      | i == j                     = 1
+      | i > k && j == k            = -(multipliers !! (i - (k+1))) -- i=k+1..n-1
+      | otherwise                  = 0
 
--- 3) 행 덧셈: row i <- row i + s * row j  (i ≠ j)
-eAdd :: Int -> Int -> Int -> Double -> Matrix
-eAdd n i j s =
-  [ [ base r c + extra r c | c <- [0..n-1] ] | r <- [0..n-1] ]
-  where base r c  = if r==c then 1 else 0
-        extra r c = if r==i && c==j then s else 0
+-- L의 k열에 곱셈자 m_i 기록 (대각 1)
+updateL :: Matrix -> Int -> [Double] -> Matrix
+updateL l k multipliers =
+  [ if i == k
+      then replaceAt k 1 (l !! i)
+      else if i > k
+        then replaceAt k (multipliers !! (i - (k+1))) (l !! i)
+        else l !! i
+  | i <- [0..n-1] ]
+  where n = nRows l
 
+-- L의 “이미 확정된 부분(0..k-1열)”만 행 스왑 적용
+swapRowsInLPrefix :: Matrix -> Int -> Int -> Int -> Matrix
+swapRowsInLPrefix l k r colFixed =
+  [ if i==k then rowR
+    else if i==r then rowK
+    else l !! i
+  | i <- [0..n-1] ]
+  where
+    n     = nRows l
+    rowK  = take colFixed (l !! r) ++ drop colFixed (l !! k)
+    rowR  = take colFixed (l !! k) ++ drop colFixed (l !! r)
 
--- 한 단계: k번째 열을 피벗 1, 다른 행 0으로 만드는 E들을 만들어 누적 적용
-step :: (Matrix, Matrix) -> Int -> Either String (Matrix, Matrix)
-step (a, accE) k =
-  let (n, m) = dims a
-  in if k >= n || k >= m then Right (a, accE) else do
-      -- 피벗 후보 선택(절댓값 최대 행) - k행 이하에서
-      let candidates = [ (r, abs (a !! r !! k)) | r <- [k..n-1] ]
-          (pivotRow, pivAbs) =
-            if null candidates then (k, 0) else maximumBy (comparing snd) candidates
-      if pivAbs == 0
-        then Left $ "Singular or rank-deficient at column " ++ show k
-        else do
-          -- 1) 필요시 행 교환
-          let eswapM = if pivotRow /= k then eSwap n k pivotRow else eye n
-              a1     = eswapM `matMul` a
-              accE1  = eswapM `matMul` accE
-          let piv    = a1 !! k !! k
-          -- 2) 피벗을 1로 스케일
-          let escaleM = eScale n k (1 / piv)
-              a2      = escaleM `matMul` a1
-              accE2   = escaleM `matMul` accE1
-          -- 3) 다른 행들 0으로 만들기
-          let elim r mat =
-                let c = mat !! r !! k
-                in if r == k || c == 0 then (mat, eye n)
-                   else let e = eAdd n r k (-c)
-                        in (e `matMul` mat, e)
-              eliminateAll (mat, eProd) r =
-                let (mat', e') = elim r mat
-                in (mat', e' `matMul` eProd)
-          let (a3, elimProd) = foldl eliminateAll (a2, eye n) [0..n-1]
-              accE3          = elimProd `matMul` accE2
-          Right (a3, accE3)
+--------------------------------------------------------------------------------
+-- LU 분해 (기본행렬 사용, 부분 피벗팅)
+--------------------------------------------------------------------------------
+-- 반환: (P, L, U) such that P*A = L*U
+luDecomposeBasic :: Matrix -> Either String (Matrix, Matrix, Matrix)
+luDecomposeBasic a
+  | not (isRectangular a)      = Left "LU: 입력 행렬은 직사각형이어야 합니다."
+  | nRows a /= nCols a         = Left "LU: 정방행렬만 분해할 수 있습니다."
+  | otherwise                  = Right (pFinal, lFinal, uFinal)
+  where
+    n = nRows a
+    p0 = identity n
+    l0 = replicate n (replicate n 0)  -- 나중에 대각 1로 채워짐
+    u0 = a
 
+    (pFinal, lFinal, uFinal) = go 0 p0 l0 u0
 
--- 전체 RREF: E*A = R(=I) 가 되도록 E들을 누적(accE)해서 반환
-rrefWithE :: Matrix -> Either String (Matrix, Matrix)
-rrefWithE a =
-  let (n, m) = dims a
-      steps = [0 .. min n m - 1]
-  in foldM step (a, eye n) steps
+    go :: Int -> Matrix -> Matrix -> Matrix -> (Matrix, Matrix, Matrix)
+    go k p l u
+      | k == n    = (p, l, u)
+      | otherwise =
+          -- 1) 피벗 선택 (부분 피벗팅)
+          let (r, pivotAbs) =
+                maximumBy (comparing snd)
+                  [ (i, abs ((u !! i) !! k)) | i <- [k..n-1] ]
+          in if pivotAbs < 1e-15
+               then error "LU: singular or nearly singular pivot encountered."
+               else
+                 -- 2) 순열행렬로 U, P 스왑 적용
+                 let pk     = permSwap n k r
+                     u'     = matMul pk u
+                     p'     = matMul pk p
+                     -- L에는 지금까지 결정된 컬럼(0..k-1)까지만 행 스왑을 반영
+                     l1     = swapRowsInLPrefix l k r k
+                     ukk    = (u' !! k) !! k
+                     -- 3) 곱셈자(multipliers) 계산 (i=k+1..n-1)
+                     ms     = [ (u' !! i) !! k / ukk | i <- [k+1..n-1] ]
+                     -- 4) 소거행렬 E_k 구성, U 갱신: U_next = E_k * U'
+                     ek     = elimMatrix n k ms
+                     uNext  = matMul ek u'
+                     -- 5) L에 곱셈자 기록 (대각 1)
+                     lNext  = updateL l1 k ms
+                 in go (k+1) p' lNext uNext
 
--- Ax=b 해 풀기: (E*A = I)라면 x = E*b
-solveByElementary :: Matrix -> Vector -> Either String Vector
-solveByElementary a b = do
-  let (n, m) = dims a
-  if n /= m then Left "A must be square."
-  else do
-    (_, e) <- rrefWithE a  -- 여기서 e = A^{-1} (성공 시)
-    pure (e `matVec` b)
-
-------------------------
--- 데모
-------------------------
--- 예제: 3x3
---  2x +  y -  z =  8
--- -3x - y + 2z = -11
--- -2x + y + 2z = -3
-aEx :: Matrix
-aEx =
-  [ [ 2,  1, -1]
-  , [-3, -1,  2]
-  , [-2,  1,  2]
-  ]
-
-bEx :: Vector
-bEx = [8, -11, -3]
-
+--------------------------------------------------------------------------------
+-- 데모: 분해와 검증 출력만 (방정식 풀이 없음)
+--------------------------------------------------------------------------------
 main :: IO ()
 main = do
-  putStrLn "A ="
-  putStrLn (pretty aEx)
-  putStrLn "b ="
-  print bEx
-  putStrLn ""
+  let a = [ [1, 2, 3]
+           , [2, -4, 6]
+           , [3, -9, -3]
+           ]
 
-  case rrefWithE aEx of
-    Left err -> putStrLn $ "RREF failed: " ++ err
-    Right (r, e) -> do
-      putStrLn "R = E * A (RREF of A, ideally identity):"
-      putStrLn (pretty r)
-      putStrLn "E (product of elementary matrices, equals A^{-1} if A is nonsingular):"
-      putStrLn (pretty e)
+  putStrLn "입력 행렬 A:"
+  putStrLn (pretty a)
 
-  putStrLn "Solving A x = b using elementary matrices..."
-  case solveByElementary aEx bEx of
-    Left err -> putStrLn $ "Solve failed: " ++ err
-    Right x  -> do
-      putStrLn "x (rounded) ="
-      print (map round x)
-      -- 검증: A*x
-      let bCheck = aEx `matVec` x
-      putStrLn "A * x (should equal b) ="
-      print (map round bCheck)
-      -- print bCheck
+  case luDecomposeBasic a of
+    Left err    -> putStrLn ("LU 실패: " ++ err)
+    Right (p,l,u) -> do
+      putStrLn "P:"
+      putStrLn (pretty p)
+      putStrLn "L:"
+      putStrLn (pretty l)
+      putStrLn "U:"
+      putStrLn (pretty u)
+
+      let lhs = matMul p a
+          rhs = matMul l u
+      putStrLn "검증: P*A 와 L*U"
+      putStrLn "P*A:"
+      putStrLn (pretty lhs)
+      putStrLn "L*U:"
+      putStrLn (pretty rhs)
