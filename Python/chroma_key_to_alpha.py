@@ -143,10 +143,23 @@ def process_one(
         despill=despill,
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    # 투명 보존을 위해 PNG로 저장 권장
-    if out_path.suffix.lower() not in (".png",):
+
+    # 지원되는 출력 확장자
+    valid_exts = {".png", ".bmp"}
+    ext = out_path.suffix.lower()
+    if ext not in valid_exts:
         out_path = out_path.with_suffix(".png")
-    result.save(out_path)
+
+    # BMP의 경우: 알파 채널을 흰색 배경으로 합성
+    if out_path.suffix.lower() == ".bmp":
+        background_color = (255, 255, 255)  # 흰색 배경
+        bg = Image.new("RGB", result.size, background_color)
+        bg.paste(result, mask=result.split()[3])  # 알파 채널을 마스크로 사용
+        bg.save(out_path, format="BMP")
+    else:
+        # PNG는 알파 그대로 저장
+        result.save(out_path, format="PNG")
+
     print(f"[OK] {in_path.name} -> {out_path.name}  key={key_rgb}")
 
 
