@@ -1,9 +1,9 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-void bfs(const vector<vector<int>>& graph, int start) {
+const int MAX = 100000;
 
-    const int MAX = 100000;
+void bfs(const vector<vector<int>>& graph, int start) {
 
     queue<int> result;
     std::array<bool, MAX> visited = {false};
@@ -22,8 +22,19 @@ void bfs(const vector<vector<int>>& graph, int start) {
                 result.push(child);
             }
         }
-
     }
+}
 
+std::array<bool, MAX> dfs_visited = {false};
+void dfs(const vector<vector<int>> graph, int start) {
+    
+
+    dfs_visited[start] = true;
+
+    for (int child : graph[start]) {
+        if(!dfs_visited[child]) {
+            dfs(graph, child);
+        }
+    }
 
 }
