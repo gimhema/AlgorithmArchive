@@ -71,3 +71,43 @@ vector<int> dfs_order_iterative(const vector<vector<int>>& graph, int start) {
     }
     return order;
 }
+
+struct Edge {
+    int to;
+    long long w;
+    Edge(int to, long long w) : to(to), w(w) {}
+};
+
+pair<vector<long long>, vector<int>> dijkstra(const vector<vector<Edge>>& g, int start) {
+
+    const long long INF = (1LL << 60);
+    const int n = (int)g.size();
+
+    vector<long long> dist(n, INF);
+    vector<int> parnet(n, -1);
+
+     priority_queue<pair<long long,int>,
+                   vector<pair<long long,int>>,
+                   greater<pair<long long,int>>> pq;
+
+    dist[start] = 0;
+    pq.push({0, start});
+
+    while(!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+
+        if(d != dist[u]) continue;
+
+        for(const auto& e : g[u]) {
+
+            long long nd = d + e.w;
+            if(nd < dist[e.to]) {
+                dist[e.to] = nd;
+                parnet[e.to] = u;
+                pq.push({nd, e.to});
+            }
+        }
+    }
+    return {dist, parnet};
+}
