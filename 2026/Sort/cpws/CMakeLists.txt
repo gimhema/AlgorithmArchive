@@ -5,6 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-add_executable(main src/main.cpp src/bfs.hpp src/graph.hpp)
+add_executable(main src/main.cpp src/sort.hpp)
 
 target_compile_options(main PRIVATE -O2 -pipe -Wall -Wextra -Wshadow -Wconversion -Wno-sign-conversion)
