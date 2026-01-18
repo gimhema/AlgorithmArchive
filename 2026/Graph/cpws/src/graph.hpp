@@ -111,3 +111,48 @@ pair<vector<long long>, vector<int>> dijkstra(const vector<vector<Edge>>& g, int
     }
     return {dist, parnet};
 }
+
+tuple<vector<long long>, vector<int>, bool> bellman_ford(const vector<vector<Edge>>& g, int start) {
+    const long long INF = (1LL << 60);
+    const int n = (int)g.size();
+
+    vector<long long> dist(n, INF);
+    vector<int> parent(n, -1);
+
+    dist[start] = 0;
+
+    for (int i = 0; i < n - 1; ++i) {
+        bool changed = false;
+
+        for (int u = 0; u < n; ++u) {
+            if (dist[u] == INF) continue;
+
+            for (const auto& e : g[u]) {
+                long long nd = dist[u] + e.w;
+                if (nd < dist[e.to]) {
+                    dist[e.to] = nd;
+                    parent[e.to] = u;
+                    changed = true;
+                }
+            }
+        }
+
+        if (!changed) break;
+    }
+
+    bool hasNegCycle = false;
+    for (int u = 0; u < n; ++u) {
+        if (dist[u] == INF) continue;
+
+        for (const auto& e : g[u]) {
+            long long nd = dist[u] + e.w;
+            if (nd < dist[e.to]) {
+                hasNegCycle = true;
+                break;
+            }
+        }
+        if (hasNegCycle) break;
+    }
+
+    return {dist, parent, hasNegCycle};
+}
