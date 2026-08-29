@@ -67,21 +67,36 @@ public:
     }
 
     my_shared_ptr& operator=(my_shared_ptr&& other) noexcept {
-    if (this != &other) {
-
-        if (_rc && --(*_rc) == 0) {
-            delete Val;
-            delete _rc;
+        if (this != &other) {
+        
+            if (_rc && --(*_rc) == 0) {
+                delete Val;
+                delete _rc;
+            }
+        
+            Val = other.Val;
+            _rc = other._rc;
+        
+            other.Val = nullptr;
+            other._rc = nullptr;
         }
-
-        Val = other.Val;
-        _rc = other._rc;
-
-        other.Val = nullptr;
-        other._rc = nullptr;
+        return *this;
     }
-    return *this;
-}
+
+    T* operator->() const {return Val;}
+    T& operator*() const {return *Val;}
+    T* get() const {return Val;}
+
+    T* release() {
+        T* tmp = Val;
+        Val = nullptr;
+        return tmp;
+    }
+
+    void reset(T* p = nullptr) {
+        delete Val;
+        Val = p;
+    }
 
 
 };
