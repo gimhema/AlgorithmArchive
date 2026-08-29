@@ -62,5 +62,26 @@ public:
         }
     }
 
+    my_shared_ptr(const my_shared_ptr& other) : Val(other.Val), _rc(other._rc) {
+    if (_rc) ++(*_rc);
+    }
+
+    my_shared_ptr& operator=(my_shared_ptr&& other) noexcept {
+    if (this != &other) {
+
+        if (_rc && --(*_rc) == 0) {
+            delete Val;
+            delete _rc;
+        }
+
+        Val = other.Val;
+        _rc = other._rc;
+
+        other.Val = nullptr;
+        other._rc = nullptr;
+    }
+    return *this;
+}
+
 
 };
