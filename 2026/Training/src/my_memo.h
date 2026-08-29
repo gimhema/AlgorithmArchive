@@ -40,6 +40,5 @@ public:
         delete Val;
         Val = p;
     }
-
 };
 
