@@ -42,3 +42,25 @@ public:
     }
 };
 
+
+typedef int RC_SIZE;
+
+template<class T>
+class my_shared_ptr
+{
+private:
+    T* Val;
+    RC_SIZE _rc;
+
+public:
+    explicit my_shared_ptr(T* p = nullptr) : Val(p), _rc(1) {}
+    ~my_shared_ptr() 
+    {
+        if (_rc && --(*_rc) == 0) {
+            delete Val;
+            delete _rc;
+        }
+    }
+
+
+};
