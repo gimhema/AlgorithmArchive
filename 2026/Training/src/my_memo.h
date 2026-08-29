@@ -1,4 +1,4 @@
-
+#pragma once
 
 template<class T>
 class my_unique_ptr
