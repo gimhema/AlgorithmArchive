@@ -52,11 +52,20 @@ struct my_ctrl_block {
 
 
 template<class T>
+class my_weak_ptr;
+
+template<class T>
 class my_shared_ptr
 {
 private:
     T* Val;
     my_ctrl_block* cb;
+
+    my_shared_ptr(T* p, my_ctrl_block* c) : Val(p), cb(c) {
+        if (cb) ++cb->strong;
+    }
+
+    friend class my_weak_ptr<T>;
 
 public:
     explicit my_shared_ptr(T* p = nullptr) : Val(p), cb(p ? new my_ctrl_block() : nullptr) {}
@@ -71,15 +80,29 @@ public:
     }
 
     my_shared_ptr(const my_shared_ptr& other) : Val(other.Val), cb(other.cb) {
-        if(cb) ++(*cb->strong);
+        if (cb) ++cb->strong;
+    }
+
+    my_shared_ptr& operator=(const my_shared_ptr& other) {
+        if (this != &other) {
+            if (cb && --cb->strong == 0) {
+                delete Val;
+                if (cb->weak == 0) delete cb;
+            }
+
+            Val = other.Val;
+            cb = other.cb;
+            if (cb) ++cb->strong;
+        }
+        return *this;
     }
 
     my_shared_ptr& operator=(my_shared_ptr&& other) noexcept {
         if (this != &other) {
 
-            if (cb && --(*cb->strong) == 0) {
+            if (cb && --cb->strong == 0) {
                 delete Val;
-                delete cb;
+                if (cb->weak == 0) delete cb;
             }
 
             Val = other.Val;
@@ -97,16 +120,16 @@ public:
 
 
     void reset(T* p = nullptr) {
-        if (_rc && --(*cb->strong) == 0) {
+        if (cb && --cb->strong == 0) {
             delete Val;
-            delete cb;
+            if (cb->weak == 0) delete cb;
         }
         Val = p;
         cb = p ? new my_ctrl_block() : nullptr;
     }
 
 public:
-    my_ctrl_block get_cb() const {return cb;}
+    my_ctrl_block* get_cb() const {return cb;}
 
 };
 
@@ -119,7 +142,6 @@ class my_weak_ptr
 private:
     T* Val;
     my_ctrl_block* cb;
-    RC_SIZE* _rc;
 
 public:
     my_weak_ptr() : Val(nullptr), cb(nullptr) {}
@@ -134,9 +156,9 @@ public:
 
     my_weak_ptr& operator=(const my_weak_ptr& other) {
         if(this != &other) {
-            if(cb && --cb->weak == 0 && cb->strong == 0) delete db;
+            if(cb && --cb->weak == 0 && cb->strong == 0) delete cb;
             Val = other.Val;
-            cb = other.db;
+            cb = other.cb;
             if (cb) ++cb->weak;
         }
 
@@ -151,7 +173,7 @@ public:
         }
     }
 
-    bool expired() const {return !cb !! cb->string == 0;}
+    bool expired() const {return !cb || cb->strong == 0;}
 
     my_shared_ptr<T> lock() const {
         if(expired()) return my_shared_ptr<T>();
