@@ -42,12 +42,14 @@ public:
     }
 };
 
+typedef int RC_SIZE;
+
 struct my_ctrl_block {
     RC_SIZE strong = 1;
     RC_SIZE weak = 0;
 };
 
-typedef int RC_SIZE;
+
 
 template<class T>
 class my_shared_ptr
@@ -55,10 +57,9 @@ class my_shared_ptr
 private:
     T* Val;
     my_ctrl_block* cb;
-    RC_SIZE _rc;
 
 public:
-    explicit my_shared_ptr(T* p = nullptr) : Val(p), _rc(1) {}
+    explicit my_shared_ptr(T* p = nullptr) : Val(p), cb(p ? new my_ctrl_block() : nullptr) {}
     ~my_shared_ptr() 
     {
         if (cb) {
@@ -67,30 +68,25 @@ public:
                 if (cb->weak == 0) delete cb;
             }
         }
-
-        if (_rc && --(*_rc) == 0) {
-            delete Val;
-            delete _rc;
-        }
     }
 
-    my_shared_ptr(const my_shared_ptr& other) : Val(other.Val), _rc(other._rc) {
-    if (_rc) ++(*_rc);
+    my_shared_ptr(const my_shared_ptr& other) : Val(other.Val), cb(other.cb) {
+        if(cb) ++(*cb->strong);
     }
 
     my_shared_ptr& operator=(my_shared_ptr&& other) noexcept {
         if (this != &other) {
 
-            if (_rc && --(*_rc) == 0) {
+            if (cb && --(*cb->strong) == 0) {
                 delete Val;
-                delete _rc;
+                delete cb;
             }
 
             Val = other.Val;
-            _rc = other._rc;
+            cb = other.cb;
 
             other.Val = nullptr;
-            other._rc = nullptr;
+            other.cb = nullptr;
         }
         return *this;
     }
@@ -101,16 +97,15 @@ public:
 
 
     void reset(T* p = nullptr) {
-        if (_rc && --(*_rc) == 0) {
+        if (_rc && --(*cb->strong) == 0) {
             delete Val;
-            delete _rc;
+            delete cb;
         }
         Val = p;
-        _rc = p ? new RC_SIZE(1) : nullptr;
+        cb = p ? new my_ctrl_block() : nullptr;
     }
 
 public:
-    RC_SIZE get_rc() const {return _rc;}
     my_ctrl_block get_cb() const {return cb;}
 
 };
