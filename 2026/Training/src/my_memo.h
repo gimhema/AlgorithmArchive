@@ -111,6 +111,7 @@ public:
 
 public:
     RC_SIZE get_rc() const {return _rc;}
+    my_ctrl_block get_cb() const {return cb;}
 
 };
 
@@ -126,11 +127,39 @@ private:
     RC_SIZE* _rc;
 
 public:
+    my_weak_ptr() : Val(nullptr), cb(nullptr) {}
+    
+    my_weak_ptr(const my_shared_ptr<T>& sp) : Val(sp.get()), cb(sp.get_cb()) {
+        if(cb) ++cb->weak;
+    }
+
+    my_weak_ptr(const my_weak_ptr& other) : Val(other.Val), cb(other.cb) {
+        if(cb) ++cb->weak;
+    }
+
+    my_weak_ptr& operator=(const my_weak_ptr& other) {
+        if(this != &other) {
+            if(cb && --cb->weak == 0 && cb->strong == 0) delete db;
+            Val = other.Val;
+            cb = other.db;
+            if (cb) ++cb->weak;
+        }
+
+        return *this;
+    }
+
     ~my_weak_ptr() {
-    if (cb) {
-        if (--cb->weak == 0 && cb->strong == 0) {
-            delete cb;
+        if (cb) {
+            if (--cb->weak == 0 && cb->strong == 0) {
+                delete cb;
+            }
         }
     }
-}
+
+    bool expired() const {return !cb !! cb->string == 0;}
+
+    my_shared_ptr<T> lock() const {
+        if(expired()) return my_shared_ptr<T>();
+        return my_shared_ptr<T>(Val, cb);
+    }
 };
