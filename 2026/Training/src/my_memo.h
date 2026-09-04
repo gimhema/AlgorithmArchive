@@ -16,7 +16,7 @@ public:
     my_unique_ptr(my_unique_ptr&& other) noexcept : Val(other.Val) {
         other.Val = nullptr;
     }
-    my_unique_ptr& operator=(my_unique_ptr&&) noexcept {
+    my_unique_ptr& operator=(my_unique_ptr&& other) noexcept {
         if (this != &other) {
             delete Val;
             Val = other.Val;
@@ -73,8 +73,9 @@ public:
     {
         if (cb) {
             if (--cb->strong == 0) {
+                bool shouldDeleteCb = (cb->weak == 0);
                 delete Val;
-                if (cb->weak == 0) delete cb;
+                if (shouldDeleteCb) delete cb;
             }
         }
     }
@@ -86,8 +87,9 @@ public:
     my_shared_ptr& operator=(const my_shared_ptr& other) {
         if (this != &other) {
             if (cb && --cb->strong == 0) {
+                bool shouldDeleteCb = (cb->weak == 0);
                 delete Val;
-                if (cb->weak == 0) delete cb;
+                if (shouldDeleteCb) delete cb;
             }
 
             Val = other.Val;
@@ -101,8 +103,9 @@ public:
         if (this != &other) {
 
             if (cb && --cb->strong == 0) {
+                bool shouldDeleteCb = (cb->weak == 0);
                 delete Val;
-                if (cb->weak == 0) delete cb;
+                if (shouldDeleteCb) delete cb;
             }
 
             Val = other.Val;
@@ -121,8 +124,9 @@ public:
 
     void reset(T* p = nullptr) {
         if (cb && --cb->strong == 0) {
+            bool shouldDeleteCb = (cb->weak == 0);
             delete Val;
-            if (cb->weak == 0) delete cb;
+            if (shouldDeleteCb) delete cb;
         }
         Val = p;
         cb = p ? new my_ctrl_block() : nullptr;
