@@ -101,3 +101,14 @@ public:
     RC_SIZE get_rc() const {return _rc;}
 
 };
+
+template<class T>
+using WEAK_REF_PTR = my_shared_ptr<T>;
+
+template<class T>
+class my_weak_ptr
+{
+private:
+    T* Val;
+    RC_SIZE* _rc;   // 아래 참고
+};
