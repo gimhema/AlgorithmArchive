@@ -61,6 +61,13 @@ public:
     explicit my_shared_ptr(T* p = nullptr) : Val(p), _rc(1) {}
     ~my_shared_ptr() 
     {
+        if (cb) {
+            if (--cb->strong == 0) {
+                delete Val;
+                if (cb->weak == 0) delete cb;
+            }
+        }
+
         if (_rc && --(*_rc) == 0) {
             delete Val;
             delete _rc;
@@ -116,5 +123,14 @@ class my_weak_ptr
 private:
     T* Val;
     my_ctrl_block* cb;
-    RC_SIZE* _rc;   // 아래 참고
+    RC_SIZE* _rc;
+
+public:
+    ~my_weak_ptr() {
+    if (cb) {
+        if (--cb->weak == 0 && cb->strong == 0) {
+            delete cb;
+        }
+    }
+}
 };
