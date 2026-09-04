@@ -42,6 +42,10 @@ public:
     }
 };
 
+struct my_ctrl_block {
+    RC_SIZE strong = 1;
+    RC_SIZE weak = 0;
+};
 
 typedef int RC_SIZE;
 
@@ -50,6 +54,7 @@ class my_shared_ptr
 {
 private:
     T* Val;
+    my_ctrl_block* cb;
     RC_SIZE _rc;
 
 public:
@@ -110,5 +115,6 @@ class my_weak_ptr
 {
 private:
     T* Val;
+    my_ctrl_block* cb;
     RC_SIZE* _rc;   // 아래 참고
 };
